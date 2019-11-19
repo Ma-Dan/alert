@@ -8,14 +8,6 @@ import (
 	"kubesphere.io/alert/pkg/util/pbutil"
 )
 
-type AlertInfo struct {
-	RsFilter ResourceFilter `json:"resource_filter"`
-	Policy   Policy         `json:"policy"`
-	Rules    []Rule         `json:"rules"`
-	Action   Action         `json:"action"`
-	Alert    Alert          `json:"alert"`
-}
-
 type Alert struct {
 	AlertId       string    `gorm:"column:alert_id" json:"alert_id"`
 	AlertName     string    `gorm:"column:alert_name" json:"alert_name"`

@@ -175,7 +175,7 @@ func WebService() *restful.WebService {
 	ws.Route(ws.POST("/clusters/alert").To(CreateAlertCluster).
 		Doc("Create Alert Cluster level").
 		Metadata(restfulspec.KeyOpenAPITags, tags).
-		Reads(models.AlertInfo{}).
+		Reads(models.AlertWrapper{}).
 		Writes(pb.CreateAlertResponse{}).
 		Returns(http.StatusOK, RespOK, pb.CreateAlertResponse{})).
 		Consumes(restful.MIME_JSON, constants.MIME_MERGEPATCH).
@@ -184,7 +184,7 @@ func WebService() *restful.WebService {
 	ws.Route(ws.POST("/nodes/alert").To(CreateAlertNode).
 		Doc("Create Alert Node Level").
 		Metadata(restfulspec.KeyOpenAPITags, tags).
-		Reads(models.AlertInfo{}).
+		Reads(models.AlertWrapper{}).
 		Writes(pb.CreateAlertResponse{}).
 		Returns(http.StatusOK, RespOK, pb.CreateAlertResponse{})).
 		Consumes(restful.MIME_JSON, constants.MIME_MERGEPATCH).
@@ -193,7 +193,7 @@ func WebService() *restful.WebService {
 	ws.Route(ws.POST("/workspaces/alert").To(CreateAlertWorkspace).
 		Doc("Create Alert Workspace Level").
 		Metadata(restfulspec.KeyOpenAPITags, tags).
-		Reads(models.AlertInfo{}).
+		Reads(models.AlertWrapper{}).
 		Writes(pb.CreateAlertResponse{}).
 		Returns(http.StatusOK, RespOK, pb.CreateAlertResponse{})).
 		Consumes(restful.MIME_JSON, constants.MIME_MERGEPATCH).
@@ -203,7 +203,7 @@ func WebService() *restful.WebService {
 		Doc("Create Alert Workspace Level").
 		Param(ws.PathParameter("ws_name", "Specify workspace").DataType("string").Required(true).DefaultValue("")).
 		Metadata(restfulspec.KeyOpenAPITags, tags).
-		Reads(models.AlertInfo{}).
+		Reads(models.AlertWrapper{}).
 		Writes(pb.CreateAlertResponse{}).
 		Returns(http.StatusOK, RespOK, pb.CreateAlertResponse{})).
 		Consumes(restful.MIME_JSON, constants.MIME_MERGEPATCH).
@@ -212,7 +212,7 @@ func WebService() *restful.WebService {
 	ws.Route(ws.POST("/namespaces/alert").To(CreateAlertNamespace).
 		Doc("Create Alert Namespace Level").
 		Metadata(restfulspec.KeyOpenAPITags, tags).
-		Reads(models.AlertInfo{}).
+		Reads(models.AlertWrapper{}).
 		Writes(pb.CreateAlertResponse{}).
 		Returns(http.StatusOK, RespOK, pb.CreateAlertResponse{})).
 		Consumes(restful.MIME_JSON, constants.MIME_MERGEPATCH).
@@ -222,7 +222,7 @@ func WebService() *restful.WebService {
 		Doc("Create Alert Namespace Level").
 		Param(ws.PathParameter("ns_name", "Specify namespace").DataType("string").Required(true).DefaultValue("")).
 		Metadata(restfulspec.KeyOpenAPITags, tags).
-		Reads(models.AlertInfo{}).
+		Reads(models.AlertWrapper{}).
 		Writes(pb.CreateAlertResponse{}).
 		Returns(http.StatusOK, RespOK, pb.CreateAlertResponse{})).
 		Consumes(restful.MIME_JSON, constants.MIME_MERGEPATCH).
@@ -232,7 +232,7 @@ func WebService() *restful.WebService {
 		Doc("Create Alert Workload Level").
 		Param(ws.PathParameter("ns_name", "Specify namespace").DataType("string").Required(true).DefaultValue("")).
 		Metadata(restfulspec.KeyOpenAPITags, tags).
-		Reads(models.AlertInfo{}).
+		Reads(models.AlertWrapper{}).
 		Writes(pb.CreateAlertResponse{}).
 		Returns(http.StatusOK, RespOK, pb.CreateAlertResponse{})).
 		Consumes(restful.MIME_JSON, constants.MIME_MERGEPATCH).
@@ -242,7 +242,7 @@ func WebService() *restful.WebService {
 		Doc("Create Alert Pod Level").
 		Param(ws.PathParameter("ns_name", "Specify namespace").DataType("string").Required(true).DefaultValue("")).
 		Metadata(restfulspec.KeyOpenAPITags, tags).
-		Reads(models.AlertInfo{}).
+		Reads(models.AlertWrapper{}).
 		Writes(pb.CreateAlertResponse{}).
 		Returns(http.StatusOK, RespOK, pb.CreateAlertResponse{})).
 		Consumes(restful.MIME_JSON, constants.MIME_MERGEPATCH).
@@ -252,7 +252,7 @@ func WebService() *restful.WebService {
 		Doc("Create Alert Pod Level").
 		Param(ws.PathParameter("node_id", "Specify node id").DataType("string").Required(true).DefaultValue("")).
 		Metadata(restfulspec.KeyOpenAPITags, tags).
-		Reads(models.AlertInfo{}).
+		Reads(models.AlertWrapper{}).
 		Writes(pb.CreateAlertResponse{}).
 		Returns(http.StatusOK, RespOK, pb.CreateAlertResponse{})).
 		Consumes(restful.MIME_JSON, constants.MIME_MERGEPATCH).
@@ -263,7 +263,7 @@ func WebService() *restful.WebService {
 		Param(ws.PathParameter("ns_name", "Specify namespace").DataType("string").Required(true).DefaultValue("")).
 		Param(ws.PathParameter("pod_name", "Specify pod").DataType("string").Required(true).DefaultValue("")).
 		Metadata(restfulspec.KeyOpenAPITags, tags).
-		Reads(models.AlertInfo{}).
+		Reads(models.AlertWrapper{}).
 		Writes(pb.CreateAlertResponse{}).
 		Returns(http.StatusOK, RespOK, pb.CreateAlertResponse{})).
 		Consumes(restful.MIME_JSON, constants.MIME_MERGEPATCH).
@@ -274,7 +274,7 @@ func WebService() *restful.WebService {
 		Param(ws.PathParameter("node_id", "Specify node id").DataType("string").Required(true).DefaultValue("")).
 		Param(ws.PathParameter("pod_name", "Specify pod").DataType("string").Required(true).DefaultValue("")).
 		Metadata(restfulspec.KeyOpenAPITags, tags).
-		Reads(models.AlertInfo{}).
+		Reads(models.AlertWrapper{}).
 		Writes(pb.CreateAlertResponse{}).
 		Returns(http.StatusOK, RespOK, pb.CreateAlertResponse{})).
 		Consumes(restful.MIME_JSON, constants.MIME_MERGEPATCH).

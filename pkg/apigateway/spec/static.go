@@ -2300,6 +2300,33 @@ var Files = map[string]string{
         ]
       }
     },
+    "/v1/alertwrapper": {
+      "post": {
+        "summary": "create alert wrapper",
+        "operationId": "CreateAlertWrapper",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/alertCreateAlertResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/alertCreateAlertWrapperRequest"
+            }
+          }
+        ],
+        "tags": [
+          "AlertManagerCustom"
+        ]
+      }
+    },
     "/v1/history_details": {
       "get": {
         "summary": "describe history detail",
@@ -3741,6 +3768,23 @@ var Files = map[string]string{
       },
       "title": "5.Rule\n********************************************************************************************************"
     },
+    "alertActionWrapper": {
+      "type": "object",
+      "properties": {
+        "action_name": {
+          "type": "string"
+        },
+        "trigger_status": {
+          "type": "string"
+        },
+        "trigger_action": {
+          "type": "string"
+        },
+        "nf_address_list_id": {
+          "type": "string"
+        }
+      }
+    },
     "alertAlertDetail": {
       "type": "object",
       "properties": {
@@ -3881,6 +3925,44 @@ var Files = map[string]string{
         }
       }
     },
+    "alertAlertWrapper": {
+      "type": "object",
+      "properties": {
+        "alert_name": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean",
+          "format": "boolean"
+        }
+      }
+    },
+    "alertCreateAlertWrapperRequest": {
+      "type": "object",
+      "properties": {
+        "resource_map": {
+          "type": "string"
+        },
+        "rs_filter": {
+          "$ref": "#/definitions/alertResourceFilterWrapper"
+        },
+        "policy": {
+          "$ref": "#/definitions/alertPolicyWrapper"
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/alertRuleWrapper"
+          }
+        },
+        "action": {
+          "$ref": "#/definitions/alertActionWrapper"
+        },
+        "alert": {
+          "$ref": "#/definitions/alertAlertWrapper"
+        }
+      }
+    },
     "alertDescribeAlertDetailsResponse": {
       "type": "object",
       "properties": {
@@ -4006,6 +4088,49 @@ var Files = map[string]string{
       },
       "title": "1.History\r\n********************************************************************************************************"
     },
+    "alertPolicyWrapper": {
+      "type": "object",
+      "properties": {
+        "policy_name": {
+          "type": "string"
+        },
+        "policy_description": {
+          "type": "string"
+        },
+        "policy_config": {
+          "type": "string"
+        },
+        "creator": {
+          "type": "string"
+        },
+        "available_start_time": {
+          "type": "string"
+        },
+        "available_end_time": {
+          "type": "string"
+        },
+        "language": {
+          "type": "string"
+        }
+      }
+    },
+    "alertResourceFilterWrapper": {
+      "type": "object",
+      "properties": {
+        "rs_filter_name": {
+          "type": "string"
+        },
+        "rs_filter_param": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "rs_type_id": {
+          "type": "string"
+        }
+      }
+    },
     "alertResourceStatus": {
       "type": "object",
       "properties": {
@@ -4031,6 +4156,48 @@ var Files = map[string]string{
           "type": "string"
         },
         "aggregated_alerts": {
+          "type": "string"
+        }
+      }
+    },
+    "alertRuleWrapper": {
+      "type": "object",
+      "properties": {
+        "rule_name": {
+          "type": "string"
+        },
+        "disabled": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "monitor_periods": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "severity": {
+          "type": "string"
+        },
+        "metrics_type": {
+          "type": "string"
+        },
+        "condition_type": {
+          "type": "string"
+        },
+        "thresholds": {
+          "type": "string"
+        },
+        "unit": {
+          "type": "string"
+        },
+        "consecutive_count": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "inhibit": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "metric_id": {
           "type": "string"
         }
       }

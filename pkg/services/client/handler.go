@@ -1188,35 +1188,19 @@ func DeleteAlerts(request *restful.Request, response *restful.Response) {
 	response.WriteAsJson(resp)
 }
 
-func removeResourceFilter(client pb.AlertManagerClient, ctx context.Context, rsFilterId string) {
-	var reqDeleteResourceFilter = &pb.DeleteResourceFiltersRequest{
-		RsFilterId: strings.Split(rsFilterId, ","),
-	}
-
-	client.DeleteResourceFilters(ctx, reqDeleteResourceFilter)
-}
-
-func removePolicy(client pb.AlertManagerClient, ctx context.Context, policyId string) {
-	var reqDeletePolicies = &pb.DeletePoliciesRequest{
-		PolicyId: strings.Split(policyId, ","),
-	}
-
-	client.DeletePolicies(ctx, reqDeletePolicies)
-}
-
-func createAlertInfo(resourceMap map[string]string, request *restful.Request, response *restful.Response) {
-	alertInfo := new(models.AlertInfo)
-
-	err := request.ReadEntity(&alertInfo)
+func createAlertWrapper(resourceMap map[string]string, request *restful.Request, response *restful.Response) {
+	resourceMapBytes, err := json.Marshal(resourceMap)
 	if err != nil {
-		logger.Debug(nil, "createAlertInfo request data error %+v.", err)
+		logger.Error(nil, "createAlertWrapper Marshal resourceMap failed: %+v", err)
 		response.WriteAsJson(&pb.CreateAlertResponse{})
 		return
 	}
 
-	client, err := alclient.NewClient()
+	alertWrapper := new(models.AlertWrapper)
+
+	err = request.ReadEntity(&alertWrapper)
 	if err != nil {
-		logger.Error(nil, "Failed to create alert grpc client %+v.", err)
+		logger.Debug(nil, "createAlertWrapper request data error %+v.", err)
 		response.WriteAsJson(&pb.CreateAlertResponse{})
 		return
 	}
@@ -1231,238 +1215,34 @@ func createAlertInfo(resourceMap map[string]string, request *restful.Request, re
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	//1. Check Rules Length
-	if len(alertInfo.Rules) == 0 {
-		logger.Error(nil, "CreateAlertInfo Rules Length error")
-		response.WriteAsJson(&pb.CreateAlertResponse{})
-		return
-	}
+	alertWrapper.ResourceMap = string(resourceMapBytes)
 
-	//2. Check if resource_type match
-	rsTypeIds := strings.Split(alertInfo.RsFilter.RsTypeId, ",")
+	reqCreateAlertWrapper := models.AlertWrapperToPb(alertWrapper)
 
-	var reqRsType = &pb.DescribeResourceTypesRequest{
-		RsTypeId: rsTypeIds,
-	}
-
-	respRsType, err := client.DescribeResourceTypes(ctx, reqRsType)
+	respCreateAlertWrapper, err := clientCustom.CreateAlertWrapper(ctx, reqCreateAlertWrapper)
 	if err != nil {
-		logger.Error(nil, "CreateAlertInfo DescribeResourceTypes failed: %+v", err)
+		logger.Error(nil, "createAlertWrapper CreateAlertWrapper failed: %+v", err)
 		response.WriteAsJson(&pb.CreateAlertResponse{})
 		return
 	}
 
-	if respRsType.Total != 1 {
-		logger.Error(nil, "CreateAlertInfo resource type error")
-		response.WriteAsJson(&pb.CreateAlertResponse{})
-		return
-	}
+	logger.Debug(nil, "createAlertWrapper success: %+v", respCreateAlertWrapper)
 
-	if respRsType.ResourceTypeSet[0].RsTypeName != resourceMap["rs_type_name"] {
-		logger.Error(nil, "CreateAlertInfo resource type mismatch")
-		response.WriteAsJson(&pb.CreateAlertResponse{})
-		return
-	}
-
-	//3. Check workspace namespace matches
-	rsFilterURI := make(map[string]string)
-	err = json.Unmarshal([]byte(alertInfo.RsFilter.RsFilterParam), &rsFilterURI)
-	if err != nil {
-		logger.Error(nil, "CreateAlertInfo Unmarshal rsFilterURI Error: %+v", err)
-		response.WriteAsJson(&pb.CreateAlertResponse{})
-		return
-	}
-
-	uriCorrect := true
-	switch resourceMap["rs_type_name"] {
-	case "cluster":
-		break
-	case "node":
-		break
-	case "workspace":
-		if resourceMap["ws_name"] != rsFilterURI["ws_name"] {
-			uriCorrect = false
-		}
-	case "namespace":
-		if resourceMap["ns_name"] != rsFilterURI["ns_name"] {
-			uriCorrect = false
-		}
-	case "workload":
-		if resourceMap["ns_name"] != rsFilterURI["ns_name"] {
-			uriCorrect = false
-		}
-	case "pod":
-		if resourceMap["ns_name"] != rsFilterURI["ns_name"] {
-			uriCorrect = false
-		}
-	case "container":
-		if resourceMap["ns_name"] != rsFilterURI["ns_name"] {
-			uriCorrect = false
-		}
-	}
-
-	if !uriCorrect {
-		logger.Error(nil, "CreateAlertInfo uri mismatch")
-		response.WriteAsJson(&pb.CreateAlertResponse{})
-		return
-	}
-
-	//4. Check if same alert_name exists
-	resourceSearch, _ := json.Marshal(resourceMap)
-	alertNames := strings.Split(alertInfo.Alert.AlertName, ",")
-	var reqCheck = &pb.DescribeAlertsWithResourceRequest{
-		ResourceSearch: string(resourceSearch),
-		AlertName:      alertNames,
-	}
-
-	respCheck, err := clientCustom.DescribeAlertsWithResource(ctx, reqCheck)
-	if err != nil {
-		logger.Error(nil, "CreateAlertInfo check alert name failed: %+v", err)
-		response.WriteAsJson(&pb.CreateAlertResponse{})
-		return
-	}
-
-	if respCheck.Total != 0 {
-		logger.Error(nil, "CreateAlertInfo alert name already exists")
-		response.WriteAsJson(&pb.CreateAlertResponse{})
-		return
-	}
-
-	//5. Create Resource Filter
-	var reqRsFilter = &pb.CreateResourceFilterRequest{
-		RsFilterName:  alertInfo.RsFilter.RsFilterName,
-		RsFilterParam: alertInfo.RsFilter.RsFilterParam,
-		Status:        alertInfo.RsFilter.Status,
-		RsTypeId:      alertInfo.RsFilter.RsTypeId,
-	}
-
-	respRsFilter, err := client.CreateResourceFilter(ctx, reqRsFilter)
-	if err != nil {
-		logger.Error(nil, "CreateAlertInfo Resource Filter failed: %+v", err)
-		response.WriteAsJson(&pb.CreateAlertResponse{})
-		return
-	}
-
-	logger.Debug(nil, "CreateAlertInfo Resource Filter success: %+v", respRsFilter)
-	rsFilterId := respRsFilter.RsFilterId
-
-	//6. Create Policy
-	var reqPolicy = &pb.CreatePolicyRequest{
-		PolicyName:         alertInfo.Policy.PolicyName,
-		PolicyDescription:  alertInfo.Policy.PolicyDescription,
-		PolicyConfig:       alertInfo.Policy.PolicyConfig,
-		Creator:            alertInfo.Policy.Creator,
-		AvailableStartTime: alertInfo.Policy.AvailableStartTime,
-		AvailableEndTime:   alertInfo.Policy.AvailableEndTime,
-		Language:           alertInfo.Policy.Language,
-		RsTypeId:           alertInfo.RsFilter.RsTypeId,
-	}
-
-	respPolicy, err := client.CreatePolicy(ctx, reqPolicy)
-	if err != nil {
-		logger.Error(nil, "CreateAlertInfo Policy failed: %+v", err)
-
-		removeResourceFilter(client, ctx, rsFilterId)
-
-		response.WriteAsJson(&pb.CreateAlertResponse{})
-		return
-	}
-
-	logger.Debug(nil, "CreateAlertInfo Policy success: %+v", respPolicy)
-	policyId := respPolicy.PolicyId
-
-	//7. Create Action
-	var reqAction = &pb.CreateActionRequest{
-		ActionName:      alertInfo.Action.ActionName,
-		PolicyId:        policyId,
-		NfAddressListId: alertInfo.Action.NfAddressListId,
-	}
-
-	respAction, err := client.CreateAction(ctx, reqAction)
-	if err != nil {
-		logger.Error(nil, "CreateAlertInfo Action failed: %+v", err)
-
-		removeResourceFilter(client, ctx, rsFilterId)
-		removePolicy(client, ctx, policyId)
-
-		response.WriteAsJson(&pb.CreateAlertResponse{})
-		return
-	}
-
-	logger.Debug(nil, "CreateAlertInfo Action success: %+v", respAction)
-
-	//8. Create Rules
-	createRulesSuccess := true
-	for _, rule := range alertInfo.Rules {
-		var reqRule = &pb.CreateRuleRequest{
-			RuleName:         rule.RuleName,
-			Disabled:         rule.Disabled,
-			MonitorPeriods:   rule.MonitorPeriods,
-			Severity:         rule.Severity,
-			MetricsType:      rule.MetricsType,
-			ConditionType:    rule.ConditionType,
-			Thresholds:       rule.Thresholds,
-			Unit:             rule.Unit,
-			ConsecutiveCount: rule.ConsecutiveCount,
-			Inhibit:          rule.Inhibit,
-			PolicyId:         policyId,
-			MetricId:         rule.MetricId,
-		}
-
-		_, err := client.CreateRule(ctx, reqRule)
-		if err != nil {
-			createRulesSuccess = false
-			break
-		}
-	}
-
-	if !createRulesSuccess {
-		logger.Error(nil, "CreateAlertInfo Rules failed")
-
-		removeResourceFilter(client, ctx, rsFilterId)
-		removePolicy(client, ctx, policyId)
-
-		response.WriteAsJson(&pb.CreateAlertResponse{})
-		return
-	}
-
-	logger.Debug(nil, "CreateAlertInfo Rules success")
-
-	//9. Create Alert
-	var reqAlert = &pb.CreateAlertRequest{
-		AlertName:  alertInfo.Alert.AlertName,
-		PolicyId:   policyId,
-		RsFilterId: rsFilterId,
-	}
-
-	respAlert, err := client.CreateAlert(ctx, reqAlert)
-	if err != nil {
-		logger.Error(nil, "CreateAlertInfo Alert failed: %+v", err)
-
-		removeResourceFilter(client, ctx, rsFilterId)
-		removePolicy(client, ctx, policyId)
-
-		response.WriteAsJson(&pb.CreateAlertResponse{})
-		return
-	}
-
-	logger.Debug(nil, "CreateAlertInfo Alert success: %+v", respAlert)
-
-	response.WriteAsJson(respAlert)
+	response.WriteAsJson(respCreateAlertWrapper)
 }
 
 func CreateAlertCluster(request *restful.Request, response *restful.Response) {
 	resourceMap := map[string]string{}
 	resourceMap["rs_type_name"] = "cluster"
 
-	createAlertInfo(resourceMap, request, response)
+	createAlertWrapper(resourceMap, request, response)
 }
 
 func CreateAlertNode(request *restful.Request, response *restful.Response) {
 	resourceMap := map[string]string{}
 	resourceMap["rs_type_name"] = "node"
 
-	createAlertInfo(resourceMap, request, response)
+	createAlertWrapper(resourceMap, request, response)
 }
 
 func CreateAlertWorkspace(request *restful.Request, response *restful.Response) {
@@ -1470,7 +1250,7 @@ func CreateAlertWorkspace(request *restful.Request, response *restful.Response) 
 	resourceMap["rs_type_name"] = "workspace"
 	resourceMap["ws_name"] = request.PathParameter("ws_name")
 
-	createAlertInfo(resourceMap, request, response)
+	createAlertWrapper(resourceMap, request, response)
 }
 
 func CreateAlertNamespace(request *restful.Request, response *restful.Response) {
@@ -1478,7 +1258,7 @@ func CreateAlertNamespace(request *restful.Request, response *restful.Response) 
 	resourceMap["rs_type_name"] = "namespace"
 	resourceMap["ns_name"] = request.PathParameter("ns_name")
 
-	createAlertInfo(resourceMap, request, response)
+	createAlertWrapper(resourceMap, request, response)
 }
 
 func CreateAlertWorkload(request *restful.Request, response *restful.Response) {
@@ -1487,7 +1267,7 @@ func CreateAlertWorkload(request *restful.Request, response *restful.Response) {
 	resourceMap["ns_name"] = request.PathParameter("ns_name")
 	resourceMap["node_id"] = request.PathParameter("node_id")
 
-	createAlertInfo(resourceMap, request, response)
+	createAlertWrapper(resourceMap, request, response)
 }
 
 func CreateAlertPod(request *restful.Request, response *restful.Response) {
@@ -1496,7 +1276,7 @@ func CreateAlertPod(request *restful.Request, response *restful.Response) {
 	resourceMap["ns_name"] = request.PathParameter("ns_name")
 	resourceMap["node_id"] = request.PathParameter("node_id")
 
-	createAlertInfo(resourceMap, request, response)
+	createAlertWrapper(resourceMap, request, response)
 }
 
 func CreateAlertContainer(request *restful.Request, response *restful.Response) {
@@ -1506,7 +1286,7 @@ func CreateAlertContainer(request *restful.Request, response *restful.Response) 
 	resourceMap["node_id"] = request.PathParameter("node_id")
 	resourceMap["pod_name"] = request.PathParameter("pod_name")
 
-	createAlertInfo(resourceMap, request, response)
+	createAlertWrapper(resourceMap, request, response)
 }
 
 type ModifyAlertByNameResponse struct {

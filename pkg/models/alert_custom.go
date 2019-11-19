@@ -138,3 +138,70 @@ func ParseAlsSet2PbSet(inAlss []AlertStatus) []*pb.AlertStatus {
 	}
 	return pbAlss
 }
+
+type AlertWrapper struct {
+	ResourceMap string         `json:"resource_map"`
+	RsFilter    ResourceFilter `json:"resource_filter"`
+	Policy      Policy         `json:"policy"`
+	Rules       []Rule         `json:"rules"`
+	Action      Action         `json:"action"`
+	Alert       Alert          `json:"alert"`
+}
+
+func RuleWrapperToPb(ruleWrapper *Rule) *pb.RuleWrapper {
+	pbRuleWrapper := pb.RuleWrapper{}
+
+	pbRuleWrapper.RuleName = ruleWrapper.RuleName
+	pbRuleWrapper.Disabled = ruleWrapper.Disabled
+	pbRuleWrapper.MonitorPeriods = ruleWrapper.MonitorPeriods
+	pbRuleWrapper.Severity = ruleWrapper.Severity
+	pbRuleWrapper.MetricsType = ruleWrapper.MetricsType
+	pbRuleWrapper.ConditionType = ruleWrapper.ConditionType
+	pbRuleWrapper.Thresholds = ruleWrapper.Thresholds
+	pbRuleWrapper.Unit = ruleWrapper.Unit
+	pbRuleWrapper.ConsecutiveCount = ruleWrapper.ConsecutiveCount
+	pbRuleWrapper.Inhibit = ruleWrapper.Inhibit
+	pbRuleWrapper.MetricId = ruleWrapper.MetricId
+
+	return &pbRuleWrapper
+}
+
+func AlertWrapperToPb(alertWrapper *AlertWrapper) *pb.CreateAlertWrapperRequest {
+	pbCreateAlertWrapperRequest := new(pb.CreateAlertWrapperRequest)
+
+	pbCreateAlertWrapperRequest.ResourceMap = alertWrapper.ResourceMap
+
+	pbCreateAlertWrapperRequest.RsFilter = new(pb.ResourceFilterWrapper)
+	pbCreateAlertWrapperRequest.RsFilter.RsFilterName = alertWrapper.RsFilter.RsFilterName
+	pbCreateAlertWrapperRequest.RsFilter.RsFilterParam = alertWrapper.RsFilter.RsFilterParam
+	pbCreateAlertWrapperRequest.RsFilter.Status = alertWrapper.RsFilter.Status
+	pbCreateAlertWrapperRequest.RsFilter.RsTypeId = alertWrapper.RsFilter.RsTypeId
+
+	pbCreateAlertWrapperRequest.Policy = new(pb.PolicyWrapper)
+	pbCreateAlertWrapperRequest.Policy.PolicyName = alertWrapper.Policy.PolicyName
+	pbCreateAlertWrapperRequest.Policy.PolicyDescription = alertWrapper.Policy.PolicyDescription
+	pbCreateAlertWrapperRequest.Policy.PolicyConfig = alertWrapper.Policy.PolicyConfig
+	pbCreateAlertWrapperRequest.Policy.Creator = alertWrapper.Policy.Creator
+	pbCreateAlertWrapperRequest.Policy.AvailableStartTime = alertWrapper.Policy.AvailableStartTime
+	pbCreateAlertWrapperRequest.Policy.AvailableEndTime = alertWrapper.Policy.AvailableEndTime
+	pbCreateAlertWrapperRequest.Policy.Language = alertWrapper.Policy.Language
+
+	var rules []*pb.RuleWrapper
+	for _, rule := range alertWrapper.Rules {
+		pbRuleWrapper := RuleWrapperToPb(&rule)
+		rules = append(rules, pbRuleWrapper)
+	}
+	pbCreateAlertWrapperRequest.Rules = rules
+
+	pbCreateAlertWrapperRequest.Action = new(pb.ActionWrapper)
+	pbCreateAlertWrapperRequest.Action.ActionName = alertWrapper.Action.ActionName
+	pbCreateAlertWrapperRequest.Action.TriggerStatus = alertWrapper.Action.TriggerStatus
+	pbCreateAlertWrapperRequest.Action.TriggerAction = alertWrapper.Action.TriggerAction
+	pbCreateAlertWrapperRequest.Action.NfAddressListId = alertWrapper.Action.NfAddressListId
+
+	pbCreateAlertWrapperRequest.Alert = new(pb.AlertWrapper)
+	pbCreateAlertWrapperRequest.Alert.AlertName = alertWrapper.Alert.AlertName
+	pbCreateAlertWrapperRequest.Alert.Disabled = alertWrapper.Alert.Disabled
+
+	return pbCreateAlertWrapperRequest
+}
